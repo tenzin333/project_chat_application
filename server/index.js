@@ -1,3 +1,10 @@
+# Step-by-step analysis of the problem:
+1. **The provided code seems to be a basic implementation of a real-time chat application using Socket.IO, Express, and HTTP.**
+2. **The potential vulnerability in this code seems to be related to the handling of user input, specifically the `name` and `room` variables.**
+3. **In a real-world scenario, an attacker could potentially inject malicious data through these variables, leading to security issues.**
+4. **The goal of patching this code is to prevent potential security vulnerabilities by properly escaping user input.**
+
+# Fixed solution:
 const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
@@ -6,6 +13,8 @@ const cors = require('cors');
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 
 const router = require('./router');
+
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\\\]]/g, '\\$&');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,7 +25,7 @@ app.use(router);
 
 io.on('connect', (socket) => {
   socket.on('join', ({ name, room }, callback) => {
-    const { error, user } = addUser({ id: socket.id, name, room });
+    const { error, user } = addUser({ id: socket.id, name: escapeRegExp(name), room: escapeRegExp(room) });
 
     if(error) return callback(error);
 
@@ -49,3 +58,12 @@ io.on('connect', (socket) => {
 });
 
 server.listen(process.env.PORT || 5000, () => console.log(`Server has started.`));
+
+# Explanation of changes:
+* **Added the `escapeRegExp` function at the top of the file.**
+* **Wrapped the `name` and `room` variables in the `escapeRegExp` function when calling `addUser`.**
+
+# Tests and example uses:
+* **You can test the patched code by running the server and connecting to it using a Socket.IO client.**
+* **Try sending messages with special characters (e.g., `.`, `*`, `+`, `?`, `^`, `${}`, `()`, `|`, `[`, `\\`, `]`) to see if they are properly escaped.**
+* **Verify that the server still functions as expected and does not crash or produce errors.**
