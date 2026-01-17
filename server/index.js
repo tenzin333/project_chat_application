@@ -1,15 +1,28 @@
-const http = require('http');
+const http = require('https');
 const express = require('express');
 const socketio = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
+const csrf = require('csurf');
+const fs = require('fs');
 
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 
 const router = require('./router');
 
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\\\\]\\]/g, '\\\\$&');
+
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer({
+  key: fs.readFileSync(process.env.TLS_KEY || 'path/to/tls/key'),
+  cert: fs.readFileSync(process.env.TLS_CERT || 'path/to/tls/cert'),
+}, app);
 const io = socketio(server);
+
+app.disable("x-powered-by");
+app.use(helmet());
+app.use(express.json({ limit: "1mb" }));
+app.use(csrf());
 
 app.use(cors());
 app.use(router);
